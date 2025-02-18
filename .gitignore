@@ -1,0 +1,54 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.env
+
+# Sensitive credentials
+*.pem
+*.key
+credentials.json
+telegram-ocr-connection*.json
+token.json
+*credentials*.json
+config.txt
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-*
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Railway specific
+.railway/
+
+# Bot data
+bot_user_tokens/
