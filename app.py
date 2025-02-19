@@ -25,7 +25,8 @@ def get_client_config():
                 "token_uri": "https://oauth2.googleapis.com/token",
                 "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
                 "client_secret": os.environ.get('GOOGLE_CLIENT_SECRET'),
-                "redirect_uris": [os.environ.get('REDIRECT_URI')]
+                # Fixed: Use REDIRECT_URL instead of REDIRECT_URI to match your env variables
+                "redirect_uris": [os.environ.get('REDIRECT_URL')]
             }
         }
         return client_config
@@ -44,28 +45,52 @@ def oauth_callback():
         return "Missing parameters", 400
     
     try:
+        # Get client config
+        client_config = get_client_config()
+        
+        # Add debug logging
+        print(f"Client config keys: {client_config.keys()}")
+        if 'web' in client_config:
+            print(f"Web config keys: {client_config['web'].keys()}")
+            print(f"Redirect URI: {client_config['web']['redirect_uris']}")
+        
         # Exchange code for tokens
         flow = Flow.from_client_config(
-            client_config=get_client_config(),
+            client_config=client_config,
             scopes=["https://www.googleapis.com/auth/spreadsheets", 
                    "https://www.googleapis.com/auth/drive"],
-            redirect_uri=request.base_url
+            # Fixed: Use actual redirect URL from environment
+            redirect_uri=os.environ.get('REDIRECT_URL', request.base_url)
         )
+        
         flow.fetch_token(code=auth_code)
         credentials = flow.credentials
         
-        # Store credentials
+        # Store credentials in GCS
+        bucket_name = os.environ.get('GCS_BUCKET', 'andre_ocr_bot-bucket')
+        print(f"Using bucket: {bucket_name}")
+        
         storage_client = storage.Client()
-        bucket = storage_client.bucket(os.environ.get('GCS_BUCKET', 'andre_ocr_bot-bucket'))
-        blob = bucket.blob(f"bot_user_tokens/{user_id}/token.json")
+        bucket = storage_client.bucket(bucket_name)
+        
+        # Ensure the directory exists
+        directory_path = f"bot_user_tokens/{user_id}"
+        if not bucket.blob(f"{directory_path}/").exists():
+            bucket.blob(f"{directory_path}/").upload_from_string('')
+            
+        blob = bucket.blob(f"{directory_path}/token.json")
         blob.upload_from_string(credentials.to_json())
+        print(f"Token saved to {directory_path}/token.json")
         
         # Redirect back to Telegram
         bot_username = os.environ.get('BOT_USERNAME', 'YourBotUsername')
         return redirect(f"https://t.me/{bot_username}?start=auth_success_{user_id}")
         
     except Exception as e:
+        # Enhanced error logging
+        import traceback
         print(f"Error in OAuth flow: {e}")
+        print(traceback.format_exc())
         bot_username = os.environ.get('BOT_USERNAME', 'YourBotUsername')
         return redirect(f"https://t.me/{bot_username}?start=auth_error")
 
