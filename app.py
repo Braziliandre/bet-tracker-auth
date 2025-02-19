@@ -38,6 +38,10 @@ def home():
 @app.route('/oauth-callback')
 def oauth_callback():
     # Get authorization code and state (user_id)
+    print(f"Callback received with args: {request.args}")
+    print(f"Headers: {dict(request.headers)}")
+    
+    
     auth_code = request.args.get('code')
     user_id = request.args.get('state')
     
